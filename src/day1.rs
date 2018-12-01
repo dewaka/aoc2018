@@ -1,7 +1,7 @@
 // https://adventofcode.com/2018/day/1
 
+use std::collections::HashMap;
 use std::fs::File;
-use std::io::prelude::*;
 use std::io::{BufRead, BufReader};
 
 #[derive(Debug, PartialEq)]
@@ -22,10 +22,12 @@ impl Frequency {
     }
 
     fn add_change_from_str(self, cstr: &str) -> Frequency {
-        match cstr.trim().parse::<i32>() {
-            Ok(num) => self.change(num),
-            Err(_) => self,
-        }
+        let num = cstr
+            .trim()
+            .parse::<i32>()
+            .expect(&format!("Failed to parse change: {}", cstr));
+
+        self.change(num)
     }
 
     fn add_changes_from_str(self, cstrs: &[&str]) -> Frequency {
@@ -33,21 +35,56 @@ impl Frequency {
             .iter()
             .fold(self, |f, cstr| f.add_change_from_str(&cstr))
     }
+
+    fn value(&self) -> i32 {
+        let &Frequency(num) = self;
+        num
+    }
+
+    fn first_repeating_value(&self, changes: &[i32]) -> i32 {
+        let mut seen = HashMap::new();
+        let mut freq = Frequency(self.value());
+
+        loop {
+            for c in changes {
+                let value = freq.value();
+
+                let count = seen.entry(value).or_insert(1);
+                if *count == 2 {
+                    return value;
+                }
+                *count += 1;
+
+                freq = freq.change(*c);
+            }
+        }
+    }
 }
 
-pub fn day1(input: &str) {
+fn changes_from_file(input: &str) -> Vec<i32> {
     let f = File::open(input).expect("file not found");
     let file = BufReader::new(&f);
 
-    let mut freq = Frequency::new();
+    file.lines()
+        .map(|line| {
+            let change = line.expect("could not read line");
+            change
+                .parse::<i32>()
+                .expect(&format!("could not parse change: {}", change))
+        }).collect()
+}
 
-    for line in file.lines() {
-        let change = line.expect("could not read line");
-        freq = freq.add_change_from_str(&change);
-    }
+fn day1_part2(changes: &[i32]) {
+    let result = Frequency::new().first_repeating_value(changes);
+    println!("First repeating value: {}", result);
+}
 
-    let Frequency(num) = freq;
+pub fn day1(input: &str) {
+    let changes = changes_from_file(input);
+    let Frequency(num) = Frequency::new().add_changes(&changes);
     println!("Final frequency: {}", num);
+
+    day1_part2(&changes);
 }
 
 #[test]
@@ -92,4 +129,12 @@ fn test_change_frequency_from_strs() {
         Frequency::new().add_changes_from_str(&"-1, -2, -3".split(",").collect::<Vec<&str>>()),
         Frequency(-6)
     );
+}
+
+#[test]
+fn test_first_repeating_value() {
+    assert_eq!(Frequency::new().first_repeating_value(&vec!(1, -1)), 0);
+    assert_eq!(Frequency::new().first_repeating_value(&vec!(3, 3, 4, -2, -4)), 10);
+    assert_eq!(Frequency::new().first_repeating_value(&vec!(-6, 3, 8, 5, -6)), 5);
+    assert_eq!(Frequency::new().first_repeating_value(&vec!(7, 7, -2, -7, -4)), 14);
 }
