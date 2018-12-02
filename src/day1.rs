@@ -134,7 +134,16 @@ fn test_change_frequency_from_strs() {
 #[test]
 fn test_first_repeating_value() {
     assert_eq!(Frequency::new().first_repeating_value(&vec!(1, -1)), 0);
-    assert_eq!(Frequency::new().first_repeating_value(&vec!(3, 3, 4, -2, -4)), 10);
-    assert_eq!(Frequency::new().first_repeating_value(&vec!(-6, 3, 8, 5, -6)), 5);
-    assert_eq!(Frequency::new().first_repeating_value(&vec!(7, 7, -2, -7, -4)), 14);
+    assert_eq!(
+        Frequency::new().first_repeating_value(&vec!(3, 3, 4, -2, -4)),
+        10
+    );
+    assert_eq!(
+        Frequency::new().first_repeating_value(&vec!(-6, 3, 8, 5, -6)),
+        5
+    );
+    assert_eq!(
+        Frequency::new().first_repeating_value(&vec!(7, 7, -2, -7, -4)),
+        14
+    );
 }
