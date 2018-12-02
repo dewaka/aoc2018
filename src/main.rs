@@ -1,6 +1,7 @@
 mod day1;
+mod day2;
 
 fn main() {
-    println!("Hello, world!");
     day1::day1("data/input1");
+    day2::day2("data/input2");
 }

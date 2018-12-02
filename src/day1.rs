@@ -8,20 +8,20 @@ use std::io::{BufRead, BufReader};
 struct Frequency(i32);
 
 impl Frequency {
-    fn new() -> Frequency {
+    fn new() -> Self {
         Frequency(0)
     }
 
-    fn change(self, c: i32) -> Frequency {
+    fn change(self, c: i32) -> Self {
         let Frequency(x) = self;
         Frequency(x + c)
     }
 
-    fn add_changes(self, changes: &[i32]) -> Frequency {
+    fn add_changes(self, changes: &[i32]) -> Self {
         changes.iter().fold(self, |f, y| f.change(*y))
     }
 
-    fn add_change_from_str(self, cstr: &str) -> Frequency {
+    fn add_change_from_str(self, cstr: &str) -> Self {
         let num = cstr
             .trim()
             .parse::<i32>()
@@ -30,7 +30,7 @@ impl Frequency {
         self.change(num)
     }
 
-    fn add_changes_from_str(self, cstrs: &[&str]) -> Frequency {
+    fn add_changes_from_str(self, cstrs: &[&str]) -> Self {
         cstrs
             .iter()
             .fold(self, |f, cstr| f.add_change_from_str(&cstr))
