@@ -111,48 +111,26 @@ impl Sheet {
     }
 }
 
-fn sheet_area_sum(sheets: &Vec<Sheet>) -> i32 {
-    let mut total = 0;
-
-    for i in 0..sheets.len() - 1 {
-        let mut sum = sheets[i].area();
-
-        for j in i + 1..sheets.len() {
-            if let Some(s) = sheets[i].overlap(&sheets[j]) {
-                sum -= s.area();
-                if sum <= 0 {
-                    break;
-                }
-            }
-        }
-
-        total += sum;
-    }
-
-    total
-}
-
 fn overlapping_area(claims: &Vec<Claim>) -> i32 {
-    // let mut overlap_set: HashSet<Sheet> = HashSet::new();
-    let mut sheets: Vec<Sheet> = vec!();
+    let mut coords: HashMap<(i32, i32), i32> = HashMap::new();
 
-    for i in 0..claims.len() - 1 {
-        for j in i + 1..claims.len() {
-            let c1 = &claims[i];
-            let c2 = &claims[j];
+    // for each claim update the coords to keep track of used positions
+    for c in claims {
+        for x in c.sheet.left..c.sheet.left + c.sheet.width {
+            for y in c.sheet.top..c.sheet.top + c.sheet.height {
+                let pos = (x, y);
 
-            if let Some(sheet) = c1.overlap(&c2) {
-                // overlap_set.insert(sheet.clone());
-                sheets.push(sheet.clone());
+                let count = coords.entry(pos).or_insert(0);
+                *count += 1;
             }
         }
     }
 
-    // for s in overlap_set.iter() {
-    //     sheets.push(s.clone());
-    // }
-
-    sheet_area_sum(&sheets)
+    // We only need to count posistions which are used more than once (overlapping positions)
+    coords
+        .values()
+        .map(|&c| if c > 1 { 1 } else { 0 })
+        .fold(0, |sum, c| sum + c)
 }
 
 pub fn day3(input: &str) {
