@@ -1,12 +1,11 @@
 // https://adventofcode.com/2018/day/3
 
 use regex::Regex;
-use std::cmp::min;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 
-type Result<T> = ::std::result::Result<T, Box<::std::error::Error>>;
+type Result<T> = ::std::result::Result<T, Box<::std::error::Error + Send + Sync>>;
 
 #[derive(Debug, PartialEq, Hash, Eq, Clone)]
 struct Sheet {
@@ -16,7 +15,7 @@ struct Sheet {
     height: i32,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 struct Claim {
     id: i32,
     sheet: Sheet,
@@ -48,70 +47,12 @@ impl Claim {
 
                 Ok(claim)
             }
-            None => Err(From::from("Failed to parse claim")),
+            None => Err(From::from(format!("Failed to parse claim from: {}", cstr))),
         }
-    }
-
-    fn overlap(&self, other: &Self) -> Option<Sheet> {
-        self.sheet.overlap(&other.sheet)
     }
 }
 
-impl Sheet {
-    fn from(pos: (i32, i32), dim: (i32, i32)) -> Self {
-        let (left, top) = pos;
-        let (width, height) = dim;
-
-        Sheet {
-            left,
-            top,
-            width,
-            height,
-        }
-    }
-
-    fn width_overlap(&self, other: &Self) -> Option<(i32, i32)> {
-        let (x1, x2) = (self.left, self.left + self.width);
-        let (t1, t2) = (other.left, other.left + other.width);
-
-        if x1 <= t1 && t1 < x2 {
-            Some((t1, min(x2, t2) - t1))
-        } else if t1 <= x1 && x1 < t2 {
-            Some((x1, min(x2, t2) - x1))
-        } else {
-            None
-        }
-    }
-
-    fn height_overlap(&self, other: &Self) -> Option<(i32, i32)> {
-        let (y1, y2) = (self.top, self.top + self.height);
-        let (t1, t2) = (other.top, other.top + other.height);
-
-        if y1 <= t1 && t1 < y2 {
-            Some((t1, min(y2, t2) - t1))
-        } else if t1 <= y1 && y1 < t2 {
-            Some((y1, min(y2, t2) - y1))
-        } else {
-            None
-        }
-    }
-
-    fn overlap(&self, other: &Self) -> Option<Self> {
-        match self.width_overlap(other) {
-            Some((x, width)) => match self.height_overlap(other) {
-                Some((y, height)) => Some(Self::from((x, y), (width, height))),
-                None => None,
-            },
-            None => None,
-        }
-    }
-
-    fn area(&self) -> i32 {
-        self.width * self.height
-    }
-}
-
-fn overlapping_area(claims: &Vec<Claim>) -> i32 {
+fn get_coords_map(claims: &Vec<Claim>) -> HashMap<(i32, i32), i32> {
     let mut coords: HashMap<(i32, i32), i32> = HashMap::new();
 
     // for each claim update the coords to keep track of used positions
@@ -126,11 +67,44 @@ fn overlapping_area(claims: &Vec<Claim>) -> i32 {
         }
     }
 
-    // We only need to count posistions which are used more than once (overlapping positions)
     coords
+}
+
+fn overlapping_area(coords_map: &HashMap<(i32, i32), i32>) -> i32 {
+    // We only need to count posistions which are used more than once (overlapping positions)
+    coords_map
         .values()
         .map(|&c| if c > 1 { 1 } else { 0 })
         .fold(0, |sum, c| sum + c)
+}
+
+// Will find the first non-overlapping Claim
+fn find_non_overlapping(
+    claims: &Vec<Claim>,
+    coords_map: &HashMap<(i32, i32), i32>,
+) -> Option<Claim> {
+    for c in claims {
+        let mut ok = true;
+
+        for x in c.sheet.left..c.sheet.left + c.sheet.width {
+            for y in c.sheet.top..c.sheet.top + c.sheet.height {
+                let pos = (x, y);
+
+                if let Some(&count) = coords_map.get(&pos) {
+                    if count > 1 {
+                        ok = false;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if ok {
+            return Some(c.clone());
+        }
+    }
+
+    None
 }
 
 pub fn day3(input: &str) {
@@ -147,87 +121,13 @@ pub fn day3(input: &str) {
         }
     }
 
-    let area = overlapping_area(&claims);
+    let coords_map = get_coords_map(&claims);
+    let area = overlapping_area(&coords_map);
     println!("Overlapping area: {}", area);
-}
 
-#[test]
-fn test_width_overlap() {
-    fn test_overlap(s1: &Sheet, s2: &Sheet, expected: Option<(i32, i32)>) {
-        assert_eq!(s1.width_overlap(&s2), expected);
-        assert_eq!(s2.width_overlap(&s1), expected);
-    }
-
-    test_overlap(
-        &Sheet::from((2, 3), (5, 6)), // 2, 7
-        &Sheet::from((3, 4), (2, 2)), // 3, 5
-        Some((3, 2)),
-    );
-
-    test_overlap(
-        &Sheet::from((1, 3), (4, 4)), // 1, 5
-        &Sheet::from((3, 1), (4, 4)), // 3, 7
-        Some((3, 2)),
-    );
-
-    test_overlap(
-        &Sheet::from((1, 2), (4, 4)), // 1, 5
-        &Sheet::from((1, 6), (1, 4)), // 1, 2
-        Some((1, 1)),
-    );
-
-    test_overlap(
-        &Sheet::from((1, 8), (8, 4)), // 1, 9
-        &Sheet::from((8, 6), (1, 4)), // 8, 9
-        Some((8, 1)),
-    );
-}
-
-#[test]
-fn test_height_overlap() {
-    fn test_overlap(s1: &Sheet, s2: &Sheet, expected: Option<(i32, i32)>) {
-        assert_eq!(s1.height_overlap(&s2), expected);
-        assert_eq!(s2.height_overlap(&s1), expected);
-    }
-
-    test_overlap(
-        &Sheet::from((2, 3), (5, 6)), // 3, 9
-        &Sheet::from((3, 4), (2, 2)), // 4, 6
-        Some((4, 2)),
-    );
-
-    test_overlap(
-        &Sheet::from((1, 3), (4, 4)), // 3, 7
-        &Sheet::from((3, 1), (4, 4)), // 1, 5
-        Some((3, 2)),
-    );
-
-    test_overlap(
-        &Sheet::from((1, 2), (4, 4)), // 2, 6
-        &Sheet::from((1, 6), (1, 4)), // 6, 10
-        None,
-    );
-
-    test_overlap(
-        &Sheet::from((1, 1), (4, 5)), // 1, 6
-        &Sheet::from((1, 5), (1, 1)), // 5, 6
-        Some((5, 1)),
-    );
-}
-
-#[test]
-fn test_sheet_overlap() {
-    fn test_overlap(s1: &Sheet, s2: &Sheet, expected: Option<Sheet>) {
-        assert_eq!(s1.overlap(&s2), expected);
-        assert_eq!(s2.overlap(&s1), expected);
-    }
-
-    test_overlap(
-        &Sheet::from((1, 3), (4, 4)), // (1, 5), (3, 7)
-        &Sheet::from((3, 1), (4, 4)), // (3, 7), (1, 5)
-        // (3, 2) and (3, 2)
-        Some(Sheet::from((3, 3), (2, 2))),
-    );
+    // Part 2
+    let result = find_non_overlapping(&claims, &coords_map);
+    println!("Non overlapping claim: {:?}", result);
 }
 
 #[test]
@@ -278,20 +178,4 @@ fn test_parse_claim() {
             sheet: Sheet::from((302, 342), (24, 12)),
         },
     );
-}
-
-#[test]
-fn test_overlapping_area() {
-    let claims = vec![
-        Claim {
-            id: 1,
-            sheet: Sheet::from((1, 3), (4, 4)),
-        },
-        Claim {
-            id: 2,
-            sheet: Sheet::from((3, 1), (4, 4)),
-        },
-    ];
-
-    assert_eq!(overlapping_area(&claims), 4);
 }
