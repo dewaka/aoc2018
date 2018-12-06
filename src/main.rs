@@ -1,3 +1,5 @@
+#[macro_use]
+extern crate lazy_static;
 extern crate chrono;
 extern crate clap;
 extern crate regex;
@@ -8,6 +10,7 @@ use clap::{App, Arg};
 mod day1;
 mod day2;
 mod day3;
+mod day4;
 
 fn valid_day(day: u32) -> bool {
     day >= 1 && day <= 31
@@ -22,6 +25,7 @@ fn solution_for(day: u32) {
         1 => day1::day1(input_file),
         2 => day2::day2(input_file),
         3 => day3::day3(input_file),
+        4 => day4::day4(input_file),
         n => println!("Day {} is not available", n),
     }
 }

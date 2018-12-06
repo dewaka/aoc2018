@@ -15,6 +15,19 @@ struct Sheet {
     height: i32,
 }
 
+impl Sheet {
+    fn from(pos: (i32, i32), dim: (i32, i32)) -> Sheet {
+        let (left, top) = pos;
+        let (width, height) = dim;
+        Sheet {
+            left,
+            top,
+            width,
+            height,
+        }
+    }
+}
+
 #[derive(Debug, PartialEq, Clone)]
 struct Claim {
     id: i32,
