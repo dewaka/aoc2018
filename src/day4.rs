@@ -10,23 +10,23 @@ use chrono::prelude::*;
 
 type Result<T> = ::std::result::Result<T, Box<::std::error::Error + Send + Sync>>;
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug)]
 enum Action {
     Shift { guard: i32 },
     Sleep,
     WakeUp,
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug)]
 struct Record {
     time: DateTime<Utc>,
     observation: Action,
 }
 
-// What do we need to keep stats of about the guards
+// What do we need to keep stats of about the guards?
 // 1. We need to keep the total time they sleep
 // 2. Then we also need to know which minute of the hour they are most likely to fall asleep
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug)]
 struct Stats {
     sleep_total: i32,
     sleep_times: HashMap<i32, i32>,
@@ -50,14 +50,9 @@ impl Stats {
         }
     }
 
-    fn get_most_frequent_sleep_time(&self) -> Option<i32> {
-        let m = self.sleep_times.iter().max_by(|a, b| a.1.cmp(&b.1));
-
-        if let Some((&tm, _)) = m {
-            Some(tm)
-        } else {
-            None
-        }
+    // Returns the most frequently slept minute and the times it was found to be
+    fn get_most_frequent(&self) -> Option<(&i32, &i32)> {
+        self.sleep_times.iter().max_by(|a, b| a.1.cmp(b.1))
     }
 }
 
@@ -172,7 +167,7 @@ impl Record {
         stats
     }
 
-    fn find_best(stats: &HashMap<i32, Stats>) {
+    fn find_best_by_total(stats: &HashMap<i32, Stats>) {
         // We need to find who sleeps the most
         let m = stats
             .iter()
@@ -184,14 +179,27 @@ impl Record {
 
             // Then we need to find the minute they like to sleep the most
             let stat_for_guard = stats.get(guard).unwrap();
-            let frequent_min = stat_for_guard.get_most_frequent_sleep_time().unwrap();
+            let (frequent_min, _) = stat_for_guard.get_most_frequent().unwrap();
             println!("Most frequent minute: {:?}", frequent_min);
 
             let answer = frequent_min * guard;
-            println!("Answer: {}", answer);
+            println!("Best by total number of minutes: {}", answer);
         } else {
             println!("Error: could not find the guard who sleeps most!");
         }
+    }
+
+    fn find_best_by_most(stats: &HashMap<i32, Stats>) {
+        let max_by_minute_times = stats
+            .iter()
+            .map(|(id, s)| {
+                let (minute, times) = s.get_most_frequent().unwrap();
+                (id, times, minute)
+            }).max_by(|a, b| a.1.cmp(&b.1));
+
+        let (guard, _, minute) = max_by_minute_times.unwrap();
+        let answer = guard * minute;
+        println!("Best by most minutes: {}", answer);
     }
 }
 
@@ -213,7 +221,8 @@ pub fn day4(input: &str) {
 
     Record::sort_records(&mut records);
     let records = Record::process(&records);
-    Record::find_best(&records);
+    Record::find_best_by_total(&records);
+    Record::find_best_by_most(&records);
 }
 
 #[test]
