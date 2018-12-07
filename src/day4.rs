@@ -10,14 +10,14 @@ use chrono::prelude::*;
 
 type Result<T> = ::std::result::Result<T, Box<::std::error::Error + Send + Sync>>;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 enum Action {
     Shift { guard: i32 },
     Sleep,
     WakeUp,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 struct Record {
     time: DateTime<Utc>,
     observation: Action,
