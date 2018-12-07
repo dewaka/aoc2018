@@ -33,9 +33,26 @@ pub fn day5(input: &str) {
     let mut line = String::new();
     reader.read_line(&mut line).expect("Failed to read buffer");
 
-    line.trim();
+    let polymer = line.trim();
+    println!("Polymer1 length: {}", polymer_react(polymer).len());
 
-    println!("Polymer1 length: {}", polymer_react(&line).len());
+    if let Some(shortest) = shortest_polymer(polymer) {
+        println!("Shortest polymer length: {}", shortest.len());
+    } else {
+        println!("Couldn't find the shortest polymer");
+    }
+}
+
+fn filter_unit(ps: &str, u: char) -> String {
+    ps.chars()
+        .filter(|&c| c.to_lowercase().to_string() != u.to_lowercase().to_string())
+        .collect()
+}
+
+fn shortest_polymer(ps: &str) -> Option<String> {
+    ('a' as u8..('z' as u8 + 1))
+        .map(|u| polymer_react(&filter_unit(ps, u as char)))
+        .min_by_key(|x| x.len())
 }
 
 #[test]
@@ -46,4 +63,13 @@ fn test_polymer_react() {
     assert_eq!(polymer_react("aAab"), "ab");
     assert_eq!(polymer_react("cAaaC"), "caC");
     assert_eq!(polymer_react("cCAdDbEeC"), "AbC");
+}
+
+#[test]
+fn test_polymer_filter() {
+    assert_eq!(filter_unit("aaA", 'a'), "");
+    assert_eq!(filter_unit("aaA", 'A'), "");
+    assert_eq!(filter_unit("aaAbdc", 'a'), "bdc");
+    assert_eq!(filter_unit("aaAbdc", 'A'), "bdc");
+    assert_eq!(filter_unit("aaAbdc", 'b'), "aaAdc");
 }
