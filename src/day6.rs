@@ -103,9 +103,6 @@ fn process_distance(points: &Vec<Point>) -> Option<i32> {
     let s1 = score_around(points, &bounds, 400);
     let s2 = score_around(points, &bounds, 600);
 
-    let m1 = s1.values().max();
-    let m2 = s2.values().max();
-
     let mut bounded: Vec<(Point, i32)> = vec![];
 
     for (&p, &d) in &s1 {
@@ -149,20 +146,4 @@ fn test_manhatten_distance() {
 fn test_process_distance() {
     let points = vec![(1, 1), (1, 6), (8, 3), (3, 4), (5, 5), (8, 9)];
     assert_eq!(process_distance(&points), Some(17));
-}
-
-#[test]
-fn test_unique_min() {
-    assert_eq!(unique_min(&vec!(1, 2, 3, 4)), Some(&1));
-    assert_eq!(unique_min(&vec!(1, 1, 3, 4)), None);
-    assert_eq!(unique_min(&vec!(1)), Some(&1));
-    assert_eq!(unique_min::<i32>(&vec!()), None);
-}
-
-#[test]
-fn test_unique_max() {
-    assert_eq!(unique_max(&vec!(1, 2, 3, 4)), Some(&4));
-    assert_eq!(unique_max(&vec!(1, 1, 3, 4, 4)), None);
-    assert_eq!(unique_max(&vec!(1)), Some(&1));
-    assert_eq!(unique_max::<i32>(&vec!()), None);
 }
