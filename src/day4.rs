@@ -195,7 +195,8 @@ impl Record {
             .map(|(id, s)| {
                 let (minute, times) = s.get_most_frequent().unwrap();
                 (id, times, minute)
-            }).max_by(|a, b| a.1.cmp(&b.1));
+            })
+            .max_by(|a, b| a.1.cmp(&b.1));
 
         let (guard, _, minute) = max_by_minute_times.unwrap();
         let answer = guard * minute;

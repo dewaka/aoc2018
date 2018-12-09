@@ -71,7 +71,8 @@ fn changes_from_file(input: &str) -> Vec<i32> {
             change
                 .parse::<i32>()
                 .expect(&format!("could not parse change: {}", change))
-        }).collect()
+        })
+        .collect()
 }
 
 fn day1_part2(changes: &[i32]) {

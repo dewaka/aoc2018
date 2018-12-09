@@ -12,6 +12,7 @@ mod day2;
 mod day3;
 mod day4;
 mod day5;
+mod day6;
 
 fn valid_day(day: u32) -> bool {
     day >= 1 && day <= 31
@@ -28,6 +29,7 @@ fn solution_for(day: u32) {
         3 => day3::day3(input_file),
         4 => day4::day4(input_file),
         5 => day5::day5(input_file),
+        6 => day6::day6(input_file),
         n => println!("Day {} is not available", n),
     }
 }
@@ -48,7 +50,8 @@ fn main() {
                 .help("run solution for the given day")
                 .takes_value(true)
                 .required(false),
-        ).get_matches();
+        )
+        .get_matches();
 
     let day: u32 = matches
         .value_of("day")
