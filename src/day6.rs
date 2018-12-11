@@ -1,5 +1,5 @@
 use std::cmp::{Ord, Ordering};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::iter::Iterator;
@@ -70,7 +70,53 @@ fn score_around(points: &Vec<Point>, bounds: &Bounds, out: i32) -> HashMap<Point
     point_scores
 }
 
-fn process_distance(points: &Vec<Point>) -> Option<i32> {
+fn total_distance_to_point(p: Point, points: &Vec<Point>) -> i32 {
+    points
+        .iter()
+        .fold(0, |acc, &t| acc + manhatten_distance(p, t))
+}
+
+fn points_around_within_distance(
+    points: &Vec<Point>,
+    bounds: &Bounds,
+    distance: i32,
+    around: i32,
+) -> HashSet<Point> {
+    let mut region = HashSet::new();
+
+    for i in bounds.min_x - around..bounds.max_x + around + 1 {
+        for j in bounds.min_y - around..bounds.max_y + around + 1 {
+            let p = (i, j);
+
+            if total_distance_to_point(p, points) < distance {
+                region.insert(p);
+            }
+        }
+    }
+
+    region
+}
+
+fn process_distance(points: &Vec<Point>, bounds: &Bounds) -> Option<i32> {
+    let s1 = score_around(points, bounds, 400);
+    let s2 = score_around(points, bounds, 600);
+
+    let mut bounded: Vec<(Point, i32)> = vec![];
+
+    for (&p, &d) in &s1 {
+        if let Some(&d2) = s2.get(&p) {
+            if d == d2 {
+                bounded.push((p, d));
+            }
+        }
+    }
+
+    bounded.sort_by_key(|k| k.1);
+
+    bounded.last().map(|k| k.1)
+}
+
+fn bounds_of(points: &Vec<Point>) -> Bounds {
     let min_x: i32 = points
         .iter()
         .map(|x| x.0)
@@ -93,29 +139,12 @@ fn process_distance(points: &Vec<Point>) -> Option<i32> {
         .max()
         .expect("Couldn't find max y");
 
-    let bounds = Bounds {
+    Bounds {
         min_x,
         max_x,
         min_y,
         max_y,
-    };
-
-    let s1 = score_around(points, &bounds, 400);
-    let s2 = score_around(points, &bounds, 600);
-
-    let mut bounded: Vec<(Point, i32)> = vec![];
-
-    for (&p, &d) in &s1 {
-        if let Some(&d2) = s2.get(&p) {
-            if d == d2 {
-                bounded.push((p, d));
-            }
-        }
     }
-
-    bounded.sort_by_key(|k| k.1);
-
-    bounded.last().map(|k| k.1)
 }
 
 pub fn day6(input: &str) {
@@ -133,8 +162,15 @@ pub fn day6(input: &str) {
         }
     }
 
-    let max_bounded = process_distance(&points);
+    let bounds = bounds_of(&points);
+
+    let max_bounded = process_distance(&points, &bounds);
     println!("Max bounded: {:?}", max_bounded);
+
+    let distance = 10000;
+    let region_within = points_around_within_distance(&points, &bounds, distance, 400);
+
+    println!("Bounded region contains {} points", region_within.len());
 }
 
 #[test]
@@ -145,5 +181,6 @@ fn test_manhatten_distance() {
 #[test]
 fn test_process_distance() {
     let points = vec![(1, 1), (1, 6), (8, 3), (3, 4), (5, 5), (8, 9)];
-    assert_eq!(process_distance(&points), Some(17));
+    let bounds = bounds_of(&points);
+    assert_eq!(process_distance(&points, &bounds), Some(17));
 }
