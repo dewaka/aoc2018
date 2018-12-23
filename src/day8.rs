@@ -1,6 +1,6 @@
 use std::fs::File;
-use std::iter::Iterator;
 use std::io::prelude::*;
+use std::iter::Iterator;
 
 #[derive(Debug)]
 struct Node {
@@ -44,22 +44,51 @@ impl Node {
         // total
         msum + csum
     }
+
+    // Part 2
+    fn node_value(&self) -> i32 {
+        if self.children.is_empty() {
+            self.metadata.iter().sum()
+        } else {
+            let mut total = 0;
+            for &m in &self.metadata {
+                if let Some(child) = self.children.get((m - 1) as usize) {
+                    total += child.node_value();
+                }
+            }
+
+            total
+        }
+    }
 }
 
 pub fn day8(input: &str) {
     let mut file = File::open(input).expect("Failed to open input file");
     let mut contents = String::new();
-    file.read_to_string(&mut contents).expect("Failed to read file");
+    file.read_to_string(&mut contents)
+        .expect("Failed to read file");
 
-    let values = contents.trim().split(" ").map(|s| s.parse::<i32>().unwrap()).collect::<Vec<i32>>();
+    let values = contents
+        .trim()
+        .split(" ")
+        .map(|s| s.parse::<i32>().unwrap())
+        .collect::<Vec<i32>>();
 
     let node = Node::from(&values);
 
     println!("Sum metadata: {}", node.sum_metadata());
+
+    println!("Part 2 sum: {}", node.node_value());
 }
 
 #[test]
 fn test_sum() {
     let node = Node::from(&vec![2, 3, 0, 3, 10, 11, 12, 1, 1, 0, 1, 99, 2, 1, 1, 2]);
     assert_eq!(node.sum_metadata(), 138);
+}
+
+#[test]
+fn test_node_value() {
+    let node = Node::from(&vec![2, 3, 0, 3, 10, 11, 12, 1, 1, 0, 1, 99, 2, 1, 1, 2]);
+    assert_eq!(node.node_value(), 66);
 }
