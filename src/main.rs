@@ -14,6 +14,8 @@ mod day4;
 mod day5;
 mod day6;
 mod day7;
+mod day8;
+mod day9;
 
 fn valid_day(day: u32) -> bool {
     day >= 1 && day <= 31
@@ -32,6 +34,8 @@ fn solution_for(day: u32) {
         5 => day5::day5(input_file),
         6 => day6::day6(input_file),
         7 => day7::day7(input_file),
+        8 => day8::day8(input_file),
+        9 => day9::day9(input_file),
         n => println!("Day {} is not available", n),
     }
 }
